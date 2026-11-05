@@ -46,16 +46,16 @@ else
   FRONTEND_REF := $(REGISTRY)/$(FRONTEND_IMAGE):$(TAG)
 endif
 
-.PHONY: help login builder build build build-frontend \
-        publish publish publish-frontend
+.PHONY: help login builder build build-backend build-frontend \
+        publish publish-backend publish-frontend
 
 help:
 	@echo "Auto Ontology image targets:"
 	@echo "  make build               Build both images locally (host arch only)"
-	@echo "  make build       Build backend image locally"
+	@echo "  make build-backend       Build backend image locally"
 	@echo "  make build-frontend      Build frontend image locally"
 	@echo "  make publish             Build + push both images (multi-arch)"
-	@echo "  make publish     Build + push backend image"
+	@echo "  make publish-backend     Build + push backend image"
 	@echo "  make publish-frontend    Build + push frontend image"
 	@echo "  make login NGC_TOKEN=... docker login nvcr.io via NGC API token"
 	@echo ""
@@ -81,16 +81,16 @@ builder:
 	  || docker buildx create --name auto-ontology-builder --driver docker-container --use
 	@docker buildx use auto-ontology-builder
 
-build:
+build-backend:
 	docker buildx build -t $(BACKEND_REF) --load .
 
 build-frontend:
 	docker buildx build --build-arg PYTHON_API_URL=$(PYTHON_API_URL) \
 	    -t $(FRONTEND_REF) --load ./frontend
 
-build: build build-frontend
+build: build-backend build-frontend
 
-publish: require-registry builder
+publish-backend: require-registry builder
 	docker buildx build --platform $(PLATFORMS) \
 	    -t $(BACKEND_REF) --push .
 
@@ -99,7 +99,7 @@ publish-frontend: require-registry builder
 	    --build-arg PYTHON_API_URL=$(PYTHON_API_URL) \
 	    -t $(FRONTEND_REF) --push ./frontend
 
-publish: publish publish-frontend
+publish: publish-backend publish-frontend
 
 # Internal: fail fast if REGISTRY is missing on a publish target.
 .PHONY: require-registry
