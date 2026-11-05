@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 # These targets wrap the `docker buildx build` invocations needed to build
 # the backend and frontend images and (optionally) push them to NVIDIA's NGC
-# container registry. See `helm/auto-ontology/README.md` for the full deploy story;
+# container registry. See `DEPLOYMENT.md` for the full deploy story;
 # this file only covers building and publishing the images.
 #
 # Common flow (one-time):
