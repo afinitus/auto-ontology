@@ -19,6 +19,7 @@ from auto_ontology_mcp.config import DEFAULT_SPEC_PATH, Settings
 from auto_ontology_mcp.readiness import (
     CONNECTIONS_PATH,
     DATABASES_PATH,
+    ENV_SOURCE_PATH,
     STATUS_PATH,
     Readiness,
 )
@@ -53,6 +54,7 @@ def _routed(**bodies: Any) -> Callable[[httpx.Request], httpx.Response]:
         STATUS_PATH: bodies.get("status", _COMPILED),
         CONNECTIONS_PATH: bodies.get("connections", _ONE_CONNECTION),
         DATABASES_PATH: bodies.get("databases", _ONE_DATABASE),
+        ENV_SOURCE_PATH: bodies.get("env_source", False),
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -106,6 +108,15 @@ def test_a_compiled_layer_with_no_connection_is_not_ready() -> None:
     # that a question can be answered.
     assert result.databases == ["dw"]
     assert any("No database connection" in blocker for blocker in result.blockers)
+
+
+def test_connection_strings_alone_can_execute_sql() -> None:
+    """CONNECTION_STRINGS connections run SQL but are not UI-managed ones."""
+    result = _check(_routed(connections=_NO_CONNECTIONS, env_source=True))
+
+    assert result.ready is True
+    assert result.can_execute_sql is True
+    assert result.blockers == []
 
 
 def test_an_uncompiled_layer_says_to_compile_it() -> None:
