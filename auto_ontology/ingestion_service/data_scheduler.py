@@ -5,8 +5,9 @@
 """Recurring scheduler for data ingestion.
 
 Runs :func:`run_ingest` for every configured connection once at startup, then
-again every 24h measured from the end of the previous run. Connections are
-reloaded on every pass so newly added ones are picked up without a restart.
+again every ``INGEST_INTERVAL_HOURS`` (default 24h) measured from the end of
+the previous run. Connections are reloaded on every pass so newly added ones
+are picked up without a restart.
 
 A pass also replays the tagging rules, but only when semantic compilation is
 switched off — with it on, the semantic pass is the better moment and does it
@@ -17,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from datetime import timedelta
 
@@ -32,12 +34,32 @@ from auto_ontology.ingestion_service.scheduler import IntervalScheduler
 logger = logging.getLogger(__name__)
 
 # Cadence measured from the end of the previous run rather than a fixed
-# wall-clock time.
-INGEST_INTERVAL = timedelta(hours=24)
+# wall-clock time. ``INGEST_INTERVAL_HOURS`` overrides it (see .env.example).
+DEFAULT_INGEST_INTERVAL = timedelta(hours=24)
+
+
+def _ingest_interval() -> timedelta:
+    """Ingest cadence from ``INGEST_INTERVAL_HOURS``, else the 24h default."""
+    raw = os.environ.get("INGEST_INTERVAL_HOURS", "").strip()
+    if not raw:
+        return DEFAULT_INGEST_INTERVAL
+    try:
+        interval = timedelta(hours=float(raw))
+    except (ValueError, OverflowError):
+        interval = None
+    if interval is None or interval <= timedelta(0):
+        logger.warning(
+            "Ignoring invalid INGEST_INTERVAL_HOURS=%r; using the 24h default", raw
+        )
+        return DEFAULT_INGEST_INTERVAL
+    return interval
+
+
+INGEST_INTERVAL = _ingest_interval()
 
 
 class DataScheduler(IntervalScheduler):
-    """Drives data ingestion on startup, on a 24h timer, and on demand."""
+    """Drives data ingestion on startup, on an ``INGEST_INTERVAL`` timer, and on demand."""
 
     name = "ingest"
 
