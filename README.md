@@ -14,7 +14,7 @@ It enables developers to:
 - Ground: give agents trusted business meaning for metrics, entities, and relationships; reconcile inconsistent definitions across systems.
 - Validate: check generated queries against certified definitions and lineage; return provenance with every answer.
 - Expose: serve context to any agent harness through MCP, CLI, and API.
-Learn: fold certified corrections and usage back into the ontology, so shared context improves with every question.
+- Learn: fold certified corrections and usage back into the ontology, so shared context improves with every question.
 
 ## Benchmarks
 
