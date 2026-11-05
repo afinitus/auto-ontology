@@ -158,7 +158,7 @@ def create_connector(
         if connector_class is None:
             raise ValueError(
                 f"Unsupported database type: {connector_type!r}. "
-                f"Connection string: {connection_string}"
+                f"Connection string: {_redact(connection_string)}"
             )
 
         if schemas and connector_class in (
