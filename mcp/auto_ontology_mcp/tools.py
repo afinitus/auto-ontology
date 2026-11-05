@@ -53,7 +53,7 @@ class ToolSpec:
 # Ordered roughly as an agent would work: understand the vocabulary, then ask.
 # Two tools are not here because neither maps to a single request/response
 # operation: ``ask_question`` streams (``chat.py``), and ``check_readiness``
-# folds three endpoints into one verdict (``readiness.py``). The latter is why
+# folds several endpoints into one verdict (``readiness.py``). The latter is why
 # no ``get_semantic_layer_status`` entry remains: it reported one of those three
 # facts, and a compiled layer on its own never meant a question could be
 # answered.

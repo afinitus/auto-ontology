@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 STATUS_PATH = "/api/semantic-compilation/status"
 CONNECTIONS_PATH = "/api/connections"
+# Whether CONNECTION_STRINGS is set. Those connections execute SQL but are not
+# stored as UI-managed connections, so CONNECTIONS_PATH reports none of them.
+ENV_SOURCE_PATH = "/api/connections/source"
 DATABASES_PATH = "/api/datasources/dbs"
 
 
@@ -142,8 +145,10 @@ async def _probe(client: httpx.AsyncClient, path: str) -> Any:
         return None
 
 
-def _summarise(status: Any, connections: Any, databases: Any) -> Readiness:
-    """Fold the three probes into one verdict.
+def _summarise(
+    status: Any, connections: Any, databases: Any, env_source: Any = None
+) -> Readiness:
+    """Fold the probes into one verdict.
 
     A forbidden probe is recorded as unverified rather than as a blocker, so a
     caller who cannot read connections still gets a usable verdict instead of a
@@ -191,7 +196,7 @@ def _summarise(status: Any, connections: Any, databases: Any) -> Readiness:
         )
         can_execute = False
     else:
-        can_execute = int(connections.get("count") or 0) > 0
+        can_execute = int(connections.get("count") or 0) > 0 or env_source is True
         if not can_execute:
             blockers.append(
                 "No database connection is configured, so generated SQL cannot "
@@ -254,7 +259,7 @@ def register(mcp: FastMCP, settings: Settings, client: httpx.AsyncClient) -> Non
             "layer has been compiled. All three are required.\n\n"
             "Use it before the first question against an unfamiliar "
             "deployment, and whenever ask_question returns an empty answer. It is "
-            "three cheap reads, and it separates 'this deployment is not set "
+            "a few cheap reads, and it separates 'this deployment is not set "
             "up' from 'the question was not understood' — which otherwise look "
             "identical and are fixed in completely different places.\n\n"
             "Facts the signed-in account may not read come back under "
@@ -264,12 +269,13 @@ def register(mcp: FastMCP, settings: Settings, client: httpx.AsyncClient) -> Non
     )
     async def check_readiness() -> Readiness:
         """Probe the deployment and report what it can currently do."""
-        status, connections, databases = await asyncio.gather(
+        status, connections, databases, env_source = await asyncio.gather(
             _probe(client, STATUS_PATH),
             _probe(client, CONNECTIONS_PATH),
             _probe(client, DATABASES_PATH),
+            _probe(client, ENV_SOURCE_PATH),
         )
-        readiness = _summarise(status, connections, databases)
+        readiness = _summarise(status, connections, databases, env_source)
         if not readiness.ready:
             logger.info("Deployment not ready: %s", "; ".join(readiness.blockers))
         return readiness
@@ -278,6 +284,7 @@ def register(mcp: FastMCP, settings: Settings, client: httpx.AsyncClient) -> Non
 __all__ = [
     "CONNECTIONS_PATH",
     "DATABASES_PATH",
+    "ENV_SOURCE_PATH",
     "FORBIDDEN",
     "STATUS_PATH",
     "Readiness",
