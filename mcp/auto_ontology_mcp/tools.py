@@ -4,7 +4,7 @@
 
 """The curated tool surface, selected from the public OpenAPI spec.
 
-The spec describes 87 operations. Exposing all of them would be actively
+The spec describes over 100 operations. Exposing all of them would be actively
 harmful: agent tool-selection degrades well before that count, and most of the
 surface — SSO providers, token management, custom prompts, compilation control
 — has no business being agent-callable. So this module names an explicit
